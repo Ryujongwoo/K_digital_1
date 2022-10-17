@@ -1,0 +1,4 @@
+https://ibatis.apache.org/dtd/에 접속한다.
+sql-map-2.dtd 파일을 다운받는다.
+preferences > XML Catalog 검색 > Add > File System
+key: -//iBATIS.com//DTD SQL Map 2.0//EN
