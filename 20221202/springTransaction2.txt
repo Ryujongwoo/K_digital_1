@@ -1,0 +1,66 @@
+servlet-context.xml에 bean 추가
+
+<!-- DriverManagerDataSource 클래스 bean 설정 => DB 연결정보 -->
+<beans:bean name="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+	<beans:property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/>
+	<beans:property name="url" value="jdbc:oracle:thin:@localhost:1521:xe"/>
+	<beans:property name="username" value="koreait"/>
+	<beans:property name="password" value="0000"/>
+</beans:bean>
+
+<!-- JdbcTemplate 클래스 bean 설정 => DB와 연결 -->
+<beans:bean name="template" class="org.springframework.jdbc.core.JdbcTemplate">
+	<beans:property name="dataSource" ref="dataSource"/>
+</beans:bean>
+
+<!-- 트랜잭션 Bean 설정 => springTransaction2에 추가 -->
+<beans:bean name="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+	<beans:property name="dataSource" ref="dataSource"/>
+</beans:bean>
+
+<!-- DAO 클래스의 bean 설정 -->
+<beans:bean name="dao" class="com.koreait.dao.TransactionDAO">
+	<beans:property name="template" ref="template"/>
+	<!-- 트랜잭션 객체 초기화 => springTransaction2에 추가 -->
+	<beans:property name="transactionManager" ref="transactionManager"/>
+</beans:bean>
+
+==============================================================================================
+DAO 클래스에 DBCPTemplate 객체 추가
+
+//	DBCPTemplate 객체
+	JdbcTemplate template;
+	public void setTemplate(JdbcTemplate template) {
+		this.template = template;
+	}
+
+DAO 클래스에 PlatformTransactionManager 객체 추가
+
+//	트랜잭션 객체
+	PlatformTransactionManager transactionManager;
+	public void setTransactionManager(PlatformTransactionManager transactionManager) {
+		this.transactionManager = transactionManager;
+	}
+
+
+DAO 클래스에 try ~ catch로 트랜잭션을 처리한다.
+
+//		try ~ catch로 트랜잭션을 처리한다.
+		try {
+
+			...
+			card, ticket 테이블에 insert sql 명령을 실행한다.
+			...
+
+//			정상 처리되면 트랜잭션을 commit 시킨다.
+			transactionManager.commit(status);
+			
+		} catch (Exception e) {
+//			e.printStackTrace();
+//			정상 처리가 되지않으면 트랜잭션을 rollback 시킨다.
+			transactionManager.rollback(status);
+		}
+
+
+
+
