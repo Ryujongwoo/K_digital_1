@@ -1,0 +1,106 @@
+web.xml에 한글 깨짐 방지 필터 추가
+
+<!-- 한글 깨짐 방지 필터 -->
+<filter>
+	<filter-name>encodingFilter</filter-name>
+	<filter-class>
+		org.springframework.web.filter.CharacterEncodingFilter     
+	</filter-class>
+	<init-param>
+		<param-name>encoding</param-name>   
+		<param-value>UTF-8</param-value>
+	</init-param>
+	<init-param>
+		<param-name>forceEncoding</param-name>  
+		<param-value>true</param-value>
+	</init-param>
+</filter>    
+	
+<filter-mapping>
+	<filter-name>encodingFilter</filter-name>
+	<url-pattern>/*</url-pattern>                 
+</filter-mapping>
+
+==============================================================================================
+
+spring 버전 3.2.5로 변경
+
+pom.xml 파일 첫 줄 에러 수정
+
+<maven-jar-plugin.version>3.1.1</maven-jar-plugin.version>
+
+pom.xml에 security dependency 추가
+
+<!-- security dependency 추가 -->
+<dependency>
+	<groupId>org.springframework.security</groupId>
+	<artifactId>spring-security-config</artifactId>
+	<version>3.2.5.RELEASE</version>
+</dependency>
+		
+<dependency>
+	<groupId>org.springframework.security</groupId>
+	<artifactId>spring-security-core</artifactId>
+	<version>3.2.5.RELEASE</version>
+</dependency>
+		
+<dependency>
+	<groupId>org.springframework.security</groupId>
+	<artifactId>spring-security-web</artifactId>
+	<version>3.2.5.RELEASE</version>
+</dependency>
+		
+<dependency>
+	<groupId>org.springframework.security</groupId>
+	<artifactId>spring-security-taglibs</artifactId>
+	<version>3.2.5.RELEASE</version>
+</dependency>
+
+==============================================================================================
+security-context.xml 파일을 만든다.
+appServlet => 우클릭 => New => Spring Bean Configuration File => 파일명 입력 후 next => security Definition file 맨 위에거 선택
+
+<!-- 아래의 내용을 추가한다. -->
+<!-- http로 요청되는 것에 대한 보안을 설정한다. -->
+<security:http auto-config="true">
+	<security:intercept-url pattern="/login" access="ROLE_USER"/>
+	<security:intercept-url pattern="/welcome" access="ROLE_ADMIN"/>
+</security:http>
+	
+<security:authentication-manager>
+	<security:authentication-provider>
+		<security:user-service>
+			<!-- id가 user이고 password가 123이면 login만 접근할 수 있다. -->
+			<security:user name="user" password="123" authorities="ROLE_USER"/>
+			<!-- id가 admin이고 password가 123이면 login과 welcome에 접근할 수 있다. -->
+			<security:user name="admin" password="123" authorities="ROLE_ADMIN,ROLE_USER"/>
+		</security:user-service>
+	</security:authentication-provider>
+</security:authentication-manager>
+
+==============================================================================================
+web.xml 파일에 security-context.xml 실행 설정 추가
+
+<context-param> <!-- 프로그램이 실행될 때 초기화 할 spring 환경 설정 파일 경로 -->
+	<param-name>contextConfigLocation</param-name>
+	<!-- web application이 실행될 때 초기화 할 spring 환경 설정 파일 경로 -->
+	<!-- param-value에 /WEB-INF/spring/appServlet/security-context.xml를 추가한다. -->
+	<param-value>
+		/WEB-INF/spring/root-context.xml
+		/WEB-INF/spring/appServlet/security-context.xml <!-- 요거 추가 -->
+	</param-value>
+</context-param>
+
+<!-- security 필터를 추가한다. -->
+<filter>
+	<filter-name>springSecurityFilterChain</filter-name>
+	<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+</filter>
+<filter-mapping>
+	<filter-name>springSecurityFilterChain</filter-name>
+	<url-pattern>/*</url-pattern>
+</filter-mapping>
+
+
+
+
