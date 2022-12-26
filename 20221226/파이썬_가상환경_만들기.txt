@@ -1,0 +1,45 @@
+가상 환경 만들기
+파일 탐색기에서 가상 환경을 만들려는 폴더로 이동하고 주소창에 cmd를 입력한다.
+가상 환경 만들기: python -m venv 가상환경폴더이름
+D:\k_digital\python>python -m venv numpy
+가상 환경 폴더로 이동: cd 가상환경폴더이름
+D:\k_digital\python>cd numpy
+D:\k_digital\python\numpy>
+==============================================================================
+
+dir 명령은 폴더에 저장된 파일 및 폴더의 목록을 출력한다.
+D:\k_digital\python\numpy>dir
+ D 드라이브의 볼륨: 새 볼륨
+ 볼륨 일련 번호: 6C0E-8450
+
+ D:\k_digital\python\numpy 디렉터리
+
+2022-12-26  오전 09:53    <DIR>          .
+2022-12-26  오전 09:53    <DIR>          ..
+2022-12-26  오전 09:53    <DIR>          Include
+2022-12-26  오전 09:53    <DIR>          Lib
+2022-12-26  오전 09:53                75 pyvenv.cfg
+2022-12-26  오전 09:53    <DIR>          Scripts
+               1개 파일                  75 바이트
+               5개 디렉터리  221,412,556,800 바이트 남음
+
+==============================================================================
+
+가상 환경 실행하기: activate.bat
+D:\k_digital\python\numpy>cd Scripts
+D:\k_digital\python\numpy\Scripts>activate.bat
+또는
+D:\k_digital\python\numpy>.\Scripts\activate.bat
+가상 환경이 실행되면 맨 앞에 (가상환경폴더이름)이 표시된다.
+(numpy) D:\k_digital\python\numpy\Scripts>
+
+
+가상 환경 종료하기: deactivate.bat
+(numpy) D:\k_digital\python\numpy\Scripts>deactivate.bat
+또는
+(numpy) D:\k_digital\python\numpy>.\Scripts\deactivate.bat
+D:\k_digital\python\numpy\Scripts>
+==============================================================================
+
+
+
