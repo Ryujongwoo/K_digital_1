@@ -1,0 +1,25 @@
+review_list = [
+    {'movie_review' : 'this is great great movie. I will watch again', 'type' : 'positive'},
+    {'movie_review' : 'I like this movie', 'type' : 'positive'},
+    {'movie_review' : 'amazing movie in this year', 'type' : 'positive'},
+    {'movie_review' : 'cool my boyfriend also said the movie is cool', 'type' : 'positive'},
+    {'movie_review' : 'awesome of the awesome movie ever', 'type' : 'positive'},
+    {'movie_review' : 'shame I wasted money and time', 'type' : 'negative'},
+    {'movie_review' : 'regret on this move. I will never never what movie from this director', 'type' : 'negative'},
+    {'movie_review' : 'I do not like this movie', 'type' : 'negative'},
+    {'movie_review' : 'I do not like actors in this movie', 'type' : 'negative'},
+    {'movie_review' : 'boring boring sleeping movie', 'type' : 'negative'}
+]
+
+test_feedback_list = [
+    {'movie_review': 'great great great movie ever', 'type': 'positive'},
+    {'movie_review': 'I like this amazing movie', 'type': 'positive'},
+    {'movie_review': 'my boyfriend said great movie ever', 'type': 'positive'},
+    {'movie_review': 'cool cool cool', 'type': 'positive'},
+    {'movie_review': 'awesome boyfriend said cool movie ever', 'type': 'positive'},
+    {'movie_review': 'shame shame shame', 'type': 'negative'},
+    {'movie_review': 'awesome director shame movie boring movie', 'type': 'negative'},
+    {'movie_review': 'do not like this movie', 'type': 'negative'},
+    {'movie_review': 'I do not like this boring movie', 'type': 'negative'},
+    {'movie_review': 'aweful terrible boring movie', 'type': 'negative'}
+]
