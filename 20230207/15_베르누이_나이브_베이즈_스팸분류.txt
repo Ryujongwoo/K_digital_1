@@ -1,0 +1,17 @@
+email_list = [
+    {'email title' : 'free game only today', 'spam' : True},
+    {'email title' : 'cheapest flight deal', 'spam' : True},
+    {'email title' : 'limited time offer only today only today', 'spam' : True},
+    {'email title' : 'today meeting schedule', 'spam' : False},
+    {'email title' : 'your flight schedule attached', 'spam' : False},
+    {'email title' : 'your credit card statement', 'spam' : False}
+]
+
+test_email_list = [
+    {'email title' : 'free flight offer', 'spam' : True},
+    {'email title' : 'hey traveler free flight deal', 'spam' : True},
+    {'email title' : 'limited free game offer', 'spam' : True},
+    {'email title' : 'today flight schedule', 'spam' : False},
+    {'email title' : 'your credit card attached', 'spam' : False},
+    {'email title' : 'free credit card offer only today', 'spam' : False}
+]
