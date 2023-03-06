@@ -1,0 +1,413 @@
+GET _cat
+# 모든 인덱스 확인하기
+GET _cat/indices
+GET _cat/indices?v
+
+# PUT 인덱스이름 # 인덱스 만들기
+PUT index1
+# GET 인덱스이름 # 개별 인덱스 확인하기
+GET index1
+# DELETE 인덱스이름 # 개별 인덱스 삭제하기
+# 인덱스가 삭제되면서 저장된 모든 데이터도 같이 삭제된다.
+DELETE index1
+
+# 인덱스를 만들면서 데이터 입력하기
+# 인덱스가 없으면 만들고 데이터를 입력하고 인덱스가 있으면 기존 인덱스에 데이터를 입력한다.
+# PUT 인덱스이름/_doc/아이디
+# 데이터는 json 형식으로 입력한다.
+PUT index2/_doc/1
+{
+  "name": "mike",
+  "age": 25,
+  "gender": "male"
+}
+GET index2
+# 기존 인덱스에 데이터 입력하기
+PUT index2/_doc/2
+{
+  "name": "kim",
+  "country": "france"
+}
+PUT index2/_doc/3
+{
+  "name": "jane",
+  "age": "20",
+  "gender": "female"
+}
+
+# 인덱스에 저장된 데이터(도큐먼트) 읽어오기
+# GET 인덱스이름/_doc/아이디
+GET index2/_doc/1
+GET index2/_doc/2
+GET index2/_doc/3
+
+# 인덱스에 저장된 모든 데이터 읽어오기
+# GET 인덱스이름/_search
+GET index2/_search
+
+# 데이터 수정
+# PUT 인덱스이름/_doc/아이디
+# PUT 명령을 존재하지 않는 아이디로 실행하면 데이터가 입력되고 존재하는 아이디로 실행하면 데이터가 수정된다.
+PUT index2/_doc/1
+{
+  "name": "park",
+  "age": 45,
+  "gender": "female"
+}
+# PUT 명령으로 데이터를 수정하면 기존에 저장된 모든 데이터는 삭제되고 새로 입력하는 데이터로 덮어쓰기가 된다.
+PUT index2/_doc/2
+{
+  "name": "hong"
+}
+# POST 명령으로 데이터를 수정하면 저장되어있던 모든 데이터는 그대로 유지되고 수정하는 데이터만 수정된다.
+# POST 인덱스이름/_update/인덱스
+# 바로 수정할 내용을 쓰면 안되고 doc 블록 내부에 수정할 내용을 써야한다.
+POST index2/_update/3
+{
+  "doc": {
+    "name": "hong"
+  }
+}
+
+# 특정 데이터만 삭제하기
+# DELETE 인덱스이름/_doc/아이디
+DELETE index2/_doc/2
+
+# 벌크(더미) 데이터 입력하기
+POST _bulk
+{ "index": {"_index": "index2", "_id": "4"} }
+{ "name": "choi", "age": 30, "gender": "male" }
+{ "create": {"_index": "index2", "_id": "5"} }
+{ "name": "choi", "age": 30, "gender": "male" }
+# index와 create 모두 입력 기능이 실행된다.
+# index와 create의 차이점은 index은 벌크 데이터로 입력되는 아이디가 존재하면 기존 데이터를 수정하고 create는 아이디가 존재하면 에러가 발생된다.
+
+# 인덱스 매핑값 확인하기
+# GET 인덱스이름/_mapping
+GET index2/_mapping
+
+# 인덱스를 만들면서 명시적 매핑 지정하기
+# 인덱스 매핑을 사용자가 직접 지정하는 것
+# PUT 인덱스이름
+# {
+#   "mapping": {
+#     "properties": {
+#       "필드이름": {
+#         "type": "필드 타입"
+#       },
+#       ...
+#     }
+#   }
+# }
+
+PUT index3
+GET index3/_mapping
+
+PUT index3
+{
+  "mappings": {
+    "properties": {
+      "name": {
+        "type": "text"
+      },
+      "age": {
+        "type": "short"
+      },
+      "gender": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+# 텍스트 데이터는 데이터 타입을 text나 keyword로 지정한다.
+# text는 전문 검색이 필요한 데이터로 분석기가 문자열을 작은 단위(단어)로 분리한다.
+# keyword는 정렬이나 집계에 사용할 데이터로 텍스트 분석을 하지 않기 때문에 문자열을 분리하지 않는다.
+
+POST _analyze
+{
+  "analyzer": "standard",
+  "text": "We offer solutions for enterprise search, observability, and security that are built on a single, flexible technology stack that can be deployed anywhere"
+}
+
+PUT text_index
+{
+  "mappings": {
+    "properties": {
+      "contents": {
+        "type": "text"
+      }
+    }
+  }
+}
+GET text_index/_mapping
+
+PUT text_index/_doc/1
+{
+  "contents": "beautiful day"
+}
+GET text_index/_doc/1
+
+PUT text_index/_doc/2
+{
+  "contents": "beautiful today"
+}
+GET text_index/_doc/2
+GET text_index/_search
+
+GET text_index/_search
+{
+  "query": {
+    "match": {
+      "contents": "beautiful"
+    }
+  }
+}
+# match는 전문 검색을 할 수 있는 쿼리이다.
+
+PUT keyword_index
+{
+  "mappings": {
+    "properties": {
+      "contents": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+GET keyword_index/_mapping
+
+PUT keyword_index/_doc/1
+{
+  "contents": "beautiful day"
+}
+GET keyword_index/_doc/1
+
+PUT keyword_index/_doc/2
+{
+  "contents": "beautiful today"
+}
+GET keyword_index/_doc/2
+GET keyword_index/_search
+
+GET keyword_index/_search
+{
+  "query": {
+    "match": {
+      "contents": "beautiful"
+    }
+  }
+}
+
+# 멀티 필드
+# 단일 필드에 대해 여러 하위 필드를 정의한다.
+# 문자열의 경우 전문 검색이 필요하면서 정렬이나 집계도 필요한 경우에 사용한다.
+# 멀티 필드를 만들기 위해서는 fields라는 매핑 파라미터를 사용한다.
+PUT multifield_index
+{
+  "mappings": {
+    "properties": {
+      "message": {
+        "type": "text"
+      },
+      "contents": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}
+# message 필드는 단일 타입이고 contents 필드는 멀티 타입으로 설정했다.
+# contents 필드는 텍스트 타입이면서 키워드 타입을 가진다.
+
+PUT multifield_index/_doc/1
+{
+  "message": "1 document",
+  "contents": "beautiful day"
+}
+GET multifield_index/_doc/1
+
+PUT multifield_index/_doc/2
+{
+  "message": "2 document",
+  "contents": "beautiful today"
+}
+GET multifield_index/_doc/2
+
+PUT multifield_index/_doc/3
+{
+  "message": "3 document",
+  "contents": "wonderful day"
+}
+GET multifield_index/_doc/3
+
+GET multifield_index/_search
+
+# multifield_index 인덱스 전문 검색 쿼리
+GET multifield_index/_search
+{
+  "query": {
+    "match": {
+      "contents": "beautiful day"
+    }
+  }
+}
+
+# multifield_index 인덱스 용어 검색 쿼리
+GET multifield_index/_search
+{
+  "query": {
+    "term": {
+      "contents.keyword": "today"
+    }
+  }
+}
+# term는 용어 검색을 할 수 있는 쿼리이다.
+ 
+# multifield_index 인덱스 집계 쿼리
+GET multifield_index/_search
+{
+  "size": 0, 
+  "aggs": {
+    "contents": {
+      "terms": {
+        "field": "contents.keyword",
+        "size": 10
+      }
+    }
+  }
+}
+# size는 집계를 계산하는데 사용된 데이터 출력 개수를 지정한다.
+# aggs는 집계를 계산하는 쿼리이다. contents.keyword 값이 같은 데이터끼리 그룹핑이 된다.
+
+# 인덱스 템플릿
+# 설정이 동일한 인덱스를 매번 일일이 작석하는 것은 비효율적이기 때문에 설정이 동일한 여러 개의 인덱스를 만들때 사용한다.
+
+# 모든 인텍스 템플릿을 확인한다.
+GET _index_template
+# 특정 인텍스 템플릿만 확인한다.
+# GET _index_template/인덱스템플릿이름
+GET _index_template/ilm-history
+# 인텍스 템플릿 이름에 와일드카드 문자(*)를 사용할 수 있다.
+GET _index_template/.ml*
+
+# 인덱스 템플릿 만들기
+# PUT _index_template/인덱스템플릿이름
+# {
+#   인덱스 템플릿 정의
+# }
+# 인덱스 템플릿을 만들기 전에 존재하던 인덱스에는 인덱스 템플릿이 적용되지 않는다.
+# 즉, 인덱스 템플릿이 생성된 시점 이후에 작성되는 인덱스에 인덱스 템플릿이 적용된다.
+
+PUT _index_template/test_template
+{
+  "index_patterns": ["test_*"],
+  "priority": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 3,
+      "number_of_replicas": 1
+    },
+    "mappings": {
+      "properties": {
+        "name": {
+          "type": "text"
+        },
+        "age": {
+          "type": "short"
+        },
+        "gender": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}
+
+# test_template이 적용된 인덱스를 만든다.
+PUT test_index1
+PUT testindex2
+GET _cat/indices
+GET test_index1
+GET testindex2
+
+PUT test_index2/_doc/1
+{
+  "name": "kim",
+  "age": 99,
+  "gender": "male"
+}
+GET test_index2/_doc/1
+GET test_index2/_mapping
+
+PUT testindex2/_doc/1
+{
+  "name": "kim",
+  "age": 99,
+  "gender": "male"
+}
+GET testindex2/_doc/1
+GET testindex2/_mapping
+
+# 인덱스 템플릿 매핑값과 다른 데이터 생성
+PUT test_index2/_doc/2
+{
+  "name": "lee",
+  "age": "19 years",
+  "gender": "female"
+}
+
+# 인덱스 템플릿이 적용되지 않아서 다이나믹 매핑으로 생성된 인덱스
+PUT testindex2/_doc/2
+{
+  "name": "lee",
+  "age": "19 years",
+  "gender": "female"
+}
+
+# 인덱스 템플릿 삭제
+# DELETE _index_template/인덱스템플릿이름
+DELETE _index_template/test_template
+GET _index_template/test_*
+
+# 인덱스 템플릿 우선 순위 확인
+# index_patterns 속성이 동일안 인덱스 템플릿 2개를 만들고 priority 속성을 지정해서 우선순위 적용을 확인한다.
+PUT _index_template/multi_template1
+{
+  "index_patterns": ["multi_*"],
+  "priority": 1,
+  "template": {
+    "mappings": {
+      "properties": {
+        "age": { "type": "integer" },
+        "name": { "type": "text" }
+      }
+    }
+  }
+}
+
+PUT _index_template/multi_template2
+{
+  "index_patterns": ["multi_data_*"],
+  "priority": 2,
+  "template": {
+    "mappings": {
+      "properties": {
+        "name": { "type": "keyword" }
+      }
+    }
+  }
+}
+
+GET _index_template/mul*
+
+PUT multi_data_index
+DELETE multi_data_index
+GET multi_data_index/_mapping
+
+PUT multi_sample_index
+DELETE multi_sample_index
+GET multi_sample_index/_mapping
