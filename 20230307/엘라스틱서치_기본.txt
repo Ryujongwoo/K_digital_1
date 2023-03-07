@@ -1,0 +1,586 @@
+GET _cat
+# 모든 인덱스 확인하기
+GET _cat/indices
+GET _cat/indices?v
+
+# PUT 인덱스이름 # 인덱스 만들기
+PUT index1
+# GET 인덱스이름 # 개별 인덱스 확인하기
+GET index1
+# DELETE 인덱스이름 # 개별 인덱스 삭제하기
+# 인덱스가 삭제되면서 저장된 모든 데이터도 같이 삭제된다.
+DELETE index1
+
+# 인덱스를 만들면서 데이터 입력하기
+# 인덱스가 없으면 만들고 데이터를 입력하고 인덱스가 있으면 기존 인덱스에 데이터를 입력한다.
+# PUT 인덱스이름/_doc/아이디
+# 데이터는 json 형식으로 입력한다.
+PUT index2/_doc/1
+{
+  "name": "mike",
+  "age": 25,
+  "gender": "male"
+}
+GET index2
+# 기존 인덱스에 데이터 입력하기
+PUT index2/_doc/2
+{
+  "name": "kim",
+  "country": "france"
+}
+PUT index2/_doc/3
+{
+  "name": "jane",
+  "age": "20",
+  "gender": "female"
+}
+
+# 인덱스에 저장된 데이터(도큐먼트) 읽어오기
+# GET 인덱스이름/_doc/아이디
+GET index2/_doc/1
+GET index2/_doc/2
+GET index2/_doc/3
+
+# 인덱스에 저장된 모든 데이터 읽어오기
+# GET 인덱스이름/_search
+GET index2/_search
+
+# 데이터 수정
+# PUT 인덱스이름/_doc/아이디
+# PUT 명령을 존재하지 않는 아이디로 실행하면 데이터가 입력되고 존재하는 아이디로 실행하면 데이터가 수정된다.
+PUT index2/_doc/1
+{
+  "name": "park",
+  "age": 45,
+  "gender": "female"
+}
+# PUT 명령으로 데이터를 수정하면 기존에 저장된 모든 데이터는 삭제되고 새로 입력하는 데이터로 덮어쓰기가 된다.
+PUT index2/_doc/2
+{
+  "name": "hong"
+}
+# POST 명령으로 데이터를 수정하면 저장되어있던 모든 데이터는 그대로 유지되고 수정하는 데이터만 수정된다.
+# POST 인덱스이름/_update/인덱스
+# 바로 수정할 내용을 쓰면 안되고 doc 블록 내부에 수정할 내용을 써야한다.
+POST index2/_update/3
+{
+  "doc": {
+    "name": "hong"
+  }
+}
+
+# 특정 데이터만 삭제하기
+# DELETE 인덱스이름/_doc/아이디
+DELETE index2/_doc/2
+
+# 벌크(더미) 데이터 입력하기
+POST _bulk
+{ "index": {"_index": "index2", "_id": "4"} }
+{ "name": "choi", "age": 30, "gender": "male" }
+{ "create": {"_index": "index2", "_id": "5"} }
+{ "name": "choi", "age": 30, "gender": "male" }
+# index와 create 모두 입력 기능이 실행된다.
+# index와 create의 차이점은 index은 벌크 데이터로 입력되는 아이디가 존재하면 기존 데이터를 수정하고 create는 아이디가 존재하면 에러가 발생된다.
+
+# 인덱스 매핑값 확인하기
+# GET 인덱스이름/_mapping
+GET index2/_mapping
+
+# 인덱스를 만들면서 명시적 매핑 지정하기
+# 인덱스 매핑을 사용자가 직접 지정하는 것
+# PUT 인덱스이름
+# {
+#   "mapping": {
+#     "properties": {
+#       "필드이름": {
+#         "type": "필드 타입"
+#       },
+#       ...
+#     }
+#   }
+# }
+
+PUT index3
+GET index3/_mapping
+
+PUT index3
+{
+  "mappings": {
+    "properties": {
+      "name": {
+        "type": "text"
+      },
+      "age": {
+        "type": "short"
+      },
+      "gender": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+# 텍스트 데이터는 데이터 타입을 text나 keyword로 지정한다.
+# text는 전문 검색이 필요한 데이터로 분석기가 문자열을 작은 단위(단어)로 분리한다.
+# keyword는 정렬이나 집계에 사용할 데이터로 텍스트 분석을 하지 않기 때문에 문자열을 분리하지 않는다.
+
+POST _analyze
+{
+  "analyzer": "standard",
+  "text": "We offer solutions for enterprise search, observability, and security that are built on a single, flexible technology stack that can be deployed anywhere"
+}
+
+PUT text_index
+{
+  "mappings": {
+    "properties": {
+      "contents": {
+        "type": "text"
+      }
+    }
+  }
+}
+GET text_index/_mapping
+
+PUT text_index/_doc/1
+{
+  "contents": "beautiful day"
+}
+GET text_index/_doc/1
+
+PUT text_index/_doc/2
+{
+  "contents": "beautiful today"
+}
+GET text_index/_doc/2
+GET text_index/_search
+
+GET text_index/_search
+{
+  "query": {
+    "match": {
+      "contents": "beautiful"
+    }
+  }
+}
+# match는 전문 검색을 할 수 있는 쿼리이다.
+
+PUT keyword_index
+{
+  "mappings": {
+    "properties": {
+      "contents": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+GET keyword_index/_mapping
+
+PUT keyword_index/_doc/1
+{
+  "contents": "beautiful day"
+}
+GET keyword_index/_doc/1
+
+PUT keyword_index/_doc/2
+{
+  "contents": "beautiful today"
+}
+GET keyword_index/_doc/2
+GET keyword_index/_search
+
+GET keyword_index/_search
+{
+  "query": {
+    "match": {
+      "contents": "beautiful"
+    }
+  }
+}
+
+# 멀티 필드
+# 단일 필드에 대해 여러 하위 필드를 정의한다.
+# 문자열의 경우 전문 검색이 필요하면서 정렬이나 집계도 필요한 경우에 사용한다.
+# 멀티 필드를 만들기 위해서는 fields라는 매핑 파라미터를 사용한다.
+PUT multifield_index
+{
+  "mappings": {
+    "properties": {
+      "message": {
+        "type": "text"
+      },
+      "contents": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}
+# message 필드는 단일 타입이고 contents 필드는 멀티 타입으로 설정했다.
+# contents 필드는 텍스트 타입이면서 키워드 타입을 가진다.
+
+PUT multifield_index/_doc/1
+{
+  "message": "1 document",
+  "contents": "beautiful day"
+}
+GET multifield_index/_doc/1
+
+PUT multifield_index/_doc/2
+{
+  "message": "2 document",
+  "contents": "beautiful today"
+}
+GET multifield_index/_doc/2
+
+PUT multifield_index/_doc/3
+{
+  "message": "3 document",
+  "contents": "wonderful day"
+}
+GET multifield_index/_doc/3
+
+GET multifield_index/_search
+
+# multifield_index 인덱스 전문 검색 쿼리
+GET multifield_index/_search
+{
+  "query": {
+    "match": {
+      "contents": "beautiful day"
+    }
+  }
+}
+
+# multifield_index 인덱스 용어 검색 쿼리
+GET multifield_index/_search
+{
+  "query": {
+    "term": {
+      "contents.keyword": "today"
+    }
+  }
+}
+# term는 용어 검색을 할 수 있는 쿼리이다.
+ 
+# multifield_index 인덱스 집계 쿼리
+GET multifield_index/_search
+{
+  "size": 0, 
+  "aggs": {
+    "contents": {
+      "terms": {
+        "field": "contents.keyword",
+        "size": 10
+      }
+    }
+  }
+}
+# size는 집계를 계산하는데 사용된 데이터 출력 개수를 지정한다.
+# aggs는 집계를 계산하는 쿼리이다. contents.keyword 값이 같은 데이터끼리 그룹핑이 된다.
+
+# 인덱스 템플릿
+# 설정이 동일한 인덱스를 매번 일일이 작석하는 것은 비효율적이기 때문에 설정이 동일한 여러 개의 인덱스를 만들때 사용한다.
+
+# 모든 인텍스 템플릿을 확인한다.
+GET _index_template
+# 특정 인텍스 템플릿만 확인한다.
+# GET _index_template/인덱스템플릿이름
+GET _index_template/ilm-history
+# 인텍스 템플릿 이름에 와일드카드 문자(*)를 사용할 수 있다.
+GET _index_template/.ml*
+
+# 인덱스 템플릿 만들기
+# PUT _index_template/인덱스템플릿이름
+# {
+#   인덱스 템플릿 정의
+# }
+# 인덱스 템플릿을 만들기 전에 존재하던 인덱스에는 인덱스 템플릿이 적용되지 않는다.
+# 즉, 인덱스 템플릿이 생성된 시점 이후에 작성되는 인덱스에 인덱스 템플릿이 적용된다.
+
+PUT _index_template/test_template
+{
+  "index_patterns": ["test_*"],
+  "priority": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 3,
+      "number_of_replicas": 1
+    },
+    "mappings": {
+      "properties": {
+        "name": {
+          "type": "text"
+        },
+        "age": {
+          "type": "short"
+        },
+        "gender": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}
+
+# test_template이 적용된 인덱스를 만든다.
+PUT test_index1
+PUT testindex2
+GET _cat/indices
+GET test_index1
+GET testindex2
+
+PUT test_index2/_doc/1
+{
+  "name": "kim",
+  "age": 99,
+  "gender": "male"
+}
+GET test_index2/_doc/1
+GET test_index2/_mapping
+
+PUT testindex2/_doc/1
+{
+  "name": "kim",
+  "age": 99,
+  "gender": "male"
+}
+GET testindex2/_doc/1
+GET testindex2/_mapping
+
+# 인덱스 템플릿 매핑값과 다른 데이터 생성
+PUT test_index2/_doc/2
+{
+  "name": "lee",
+  "age": "19 years",
+  "gender": "female"
+}
+
+# 인덱스 템플릿이 적용되지 않아서 다이나믹 매핑으로 생성된 인덱스
+PUT testindex2/_doc/2
+{
+  "name": "lee",
+  "age": "19 years",
+  "gender": "female"
+}
+
+# 인덱스 템플릿 삭제
+# DELETE _index_template/인덱스템플릿이름
+DELETE _index_template/test_template
+GET _index_template/test_*
+
+# 인덱스 템플릿 우선 순위 확인
+# index_patterns 속성이 동일안 인덱스 템플릿 2개를 만들고 priority 속성을 지정해서 우선순위 적용을 확인한다.
+PUT _index_template/multi_template1
+{
+  "index_patterns": ["multi_*"],
+  "priority": 1,
+  "template": {
+    "mappings": {
+      "properties": {
+        "age": { "type": "integer" },
+        "name": { "type": "text" }
+      }
+    }
+  }
+}
+
+PUT _index_template/multi_template2
+{
+  "index_patterns": ["multi_data_*"],
+  "priority": 2,
+  "template": {
+    "mappings": {
+      "properties": {
+        "name": { "type": "keyword" }
+      }
+    }
+  }
+}
+
+GET _index_template/mul*
+
+PUT multi_data_index
+DELETE multi_data_index
+GET multi_data_index/_mapping
+
+PUT multi_sample_index
+DELETE multi_sample_index
+GET multi_sample_index/_mapping
+
+# 다이내믹 매핑을 적용한 인덱스
+# 인덱스를 만들때 dynamic_templates를 추가한다.
+# my_string_fields는 임의로 설정한 다이내믹 템플릿 이름이다.
+# match_mapping_type은 일종의 조건으로 조건에 만족할 경우 매핑이 적용된다.
+PUT dynamic_index1
+{
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "my_string_fields": {
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      }
+    ]
+  }
+}
+
+PUT dynamic_index1/_doc/1
+{
+  "name": "kim",
+  "age": 20
+}
+GET dynamic_index1
+GET dynamic_index1/_mapping
+GET dynamic_index1/_doc/1
+
+PUT dynamic_index1/_doc/2
+{
+  "name": "kim",
+  "age": 20,
+  "gender": "male"
+}
+
+PUT dynamic_index2
+{
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "my_long_fields": {
+          "match": "long_*",
+          "unmatch": "*_text",
+          "mapping": {
+            "type": "long"
+          }
+        }
+      }
+    ]
+  }
+}
+DELETE dynamic_index2
+GET dynamic_index2
+GET dynamic_index2/_mapping
+
+PUT dynamic_index2/_doc/1
+{
+  "long_num": "5",
+  "long_text": "170",
+  "short_num": "10000"
+}
+GET dynamic_index2/_doc/1
+
+# 분석기
+# stop 분석기는 불용어 처리를 하는 분석기
+POST _analyze
+{
+  "analyzer": "stop", 
+  "text": "The 10 most loving dog breeds."
+}
+
+# standard 분석기는 특별한 설정이 없을 경우 엘라스틱서치가 기본적으로 사용하는 분석기
+POST _analyze
+{
+  "analyzer": "standard", 
+  "text": "The 10 most loving dog breeds."
+}
+
+# simple 분석기는 숫자, 공백, 하이픈, 따옴표 같은 문자는 토큰화하지 않는다.
+POST _analyze
+{
+  "analyzer": "simple", 
+  "text": "The 10 most loving dog breeds."
+}
+
+# whitespace 분석기는 공백을 기준으로 구분해서 토큰화 한다. 소문자로 변경하지 않는다.
+POST _analyze
+{
+  "analyzer": "whitespace", 
+  "text": "The 10 most loving dog breeds."
+}
+
+# 토크나이저
+# standard 토크나이저는 standard 분석기가 사용하는 토크나이저로, 특별한 설정이 없을 경우 기본 토크나이저로 사용된다.
+# 공백, ':', '@', '-' 같은 특수문자를 제거하며 텍스 기반으로 토큰화한다.
+POST _analyze
+{
+  "tokenizer": "standard", 
+  "text": "email: Elastic@lk-company.com"
+}
+
+# lowercase 토크나이저는 standard 토크나이저와 비슷하지만 문자를 소문자로 변경시켜 토큰화하고 '.'도 구분자로 사용해서 토큰화 한다.
+POST _analyze
+{
+  "tokenizer": "lowercase", 
+  "text": "email: Elastic@lk-company.com"
+}
+
+# uax_url_email 토크나이저는 url이나 이메일을 토큰화하는데 강점있는 토크나이저이다.
+POST _analyze
+{
+  "tokenizer": "uax_url_email", 
+  "text": "email: Elastic@lk-company.com"
+}
+
+POST _analyze
+{
+  "tokenizer": "uax_url_email", 
+  "text": "url: http://localhost:5601/app/dev_tools#/console"
+}
+
+# 필터
+# 분석기는 하나의 토크나이저와 다수의 필터가 조합되서 구성된다.
+# 필터가 없는 분석기는 토크나이저만 이용해 토큰화 작업을 진행한다. 엘라스틱에서 제공하는 분석기들은 하나 이상의 필터를 포함하고 있다.
+# 필터는 단독으로 사용할 수 없고 반드시 토크나이저가 있어야 한다.
+# 적용할 필터는 []로 묶어서 사용하며 여러 개를 사용하면 입력한 순대로 필터가 적용된다.
+
+POST _analyze
+{
+  "tokenizer": "standard", 
+  "filter": ["uppercase"],
+  "text": "The 10 most loving dog breeds."
+}
+
+# 커스텀 분석기
+# 새로운 인덱스(customer_analizer)를 만들고 인덱스 설정 부분(settings)에 분석기(analysis)를 추가하고 analysis 파라미터 밑에 필터(filter)와 분석기(analyzer)를 만든다.
+# 분석기(analyzer) 이름(my_analyzer)을 지정하고 type을 custom으로 지정하면 커스텀 분석기를 의미한다.
+# 분석기에는 반드시 토크나이저(tokenizer)가 하나 들어가야 한다.
+# 필터는 선택 사항으로 필요할 경우 사용한다. 사용하지 않는 경우라도 []는 입력해야 한다.
+# 필터는 여러개를 사용할 수 있으므로 2개 이상 사용할 경우 []안에 ','로 구분해서 나열한다.
+# 필터를 여러개 사용하면 앞에 적어준 필터부터 차례대로 적용된다.
+# 사용자 정의 필터는 분석기(analysis) 밑에 filter에서 필터 이름(my_stopwords)을 지정하고 필터 타입과 필터에 따른 설정을 작성한다.
+PUT customer_analizer
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "my_stopwords": {
+          "type": "stop",
+          "stopwords": ["lions"]
+        }
+      },
+      "analyzer": {
+        "my_analyzer": {
+          "type": "custom",
+          "char_filter": [],
+          "tokenizer": "standard",
+          "filter": ["lowercase", "my_stopwords"]
+        }
+      }
+    }
+  }
+}
+DELETE customer_analizer
+
+# 커스텀 분석기 테스트
+GET customer_analizer/_analyze
+{
+  "analyzer": "my_analyzer",
+  "text": "Cats Lions Dogs"
+}
