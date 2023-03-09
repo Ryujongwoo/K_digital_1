@@ -1,0 +1,435 @@
+# 쿼리 컨텍스트
+# _search는 검색 쿼리를 위해서 엘라스틱에서 제공하는 REST API이다.
+GET kibana_sample_data_ecommerce/_search
+# match는 전문 검색을 위한 쿼리로, 역인덱싱된 용어를 검색할 때 사용한다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "match": {
+      "category": "clothing"
+    }
+  }
+}
+
+# 필터 컨텍스트
+# 필터 컨텍스트는 논리(bool) 쿼리 내부의 filter 타입에 적용된다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "term": {
+            "day_of_week": "Friday"
+          }
+        }
+      ]
+    }
+  }
+}
+
+# 쿼리 스트링
+# REST API의 주소에 쿼리문을 작성하는 방법이다.
+# 조건이 복잡해지면 가독성이 떨어지고 오류를 범하기 쉽다. => 간단한
+# _search 뒤에 '?'를 입력하고 쿼리문을 작성한다.
+GET kibana_sample_data_ecommerce/_search?q=customer_full_name:Mary
+
+# 쿼리 DSL(Domain Specific Language)
+# 쿼리 DSL은 REST API의 요청 본문 내부에 JSON 형태로 쿼리를 만든다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "match": {
+      "customer_first_name": "Mary"
+    }
+  }
+}
+
+# "explain": true를 추가하면 쿼리 내부적인 최적화 방법과 어떤 경로를 통해 검색되었으며 어떤 기준으로 스코어가 계산되었는지를 알 수 있다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "match": {
+      "customer_first_name": "Mary"
+    }
+  },
+  "explain": true
+}
+
+# match query
+# 전문 쿼리의 가장 기본이 되는 쿼리로, 전체 텍스트 중에서 특정 용어나 용어들을 검색할 때 사용한다.
+# match query를 사용하려면 필드명을 모르면 쿼리를 진행할 수 없으므로 _mapping를 사용하면 properties 속성 내부에 인덱스를 구성하는 필드 이름을 확인할 수 있다.
+GET kibana_sample_data_ecommerce/_mapping
+
+# 하나의 용어를 검색하는 매치 쿼리
+# _source 파라미터를 사용하지 않으면 모든 필드를 보여주고 사용하면 지정한 필드면 보여준다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": [
+    "customer_full_name", 
+    "customer_gender"
+    ], 
+  "query": {
+    "match": {
+      "customer_full_name": "Mary"
+    }
+  }
+}
+
+# 여러 개의 용어를 검색하는 매치 쿼리
+# 검색어 "Mary beiley"는 [mary, beiley]와 같이 토큰화된다.
+# 검색어의 공백은 OR로 인식한다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["customer_full_name", "customer_gender"], 
+  "query": {
+    "match": {
+      "customer_full_name": "Mary beiley"
+    }
+  }
+}
+
+# 검색어를 공백으로만 구분해 놓으면 OR로 인식하므로 AND를 사용하고싶다면 operator 파라미터를 and로 지정하면 된다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["customer_full_name", "customer_gender"], 
+  "query": {
+    "match": {
+      "customer_full_name": {
+        "query": "Mary bailey",
+        "operator": "and"
+      }
+    }
+  }
+}
+
+# 매치 프레이즈 쿼리
+# 매치 쿼리와 마찬가지로 전문 쿼리의 한 종류이다.
+# 매치 프레이즈 쿼리는 구(phrase)를 검색할 때 사용한다.
+# 검색 하려는 단어의 순서가 중요할 때 사용한다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["customer_full_name", "customer_gender"], 
+  "query": {
+    "match_phrase": {
+      "customer_full_name": "mary bailey"
+    }
+  }
+}
+# 검색어인 "mary bailey"가 [mary, bailey]로 토큰화되는 것까지는 매치 쿼리와 같지만, 매치 프레이즈 쿼리는 검색에 사용된 용어들이 "operator": "and"를 지정한 것 처럼 모두 포함되면서 용어의 순서까지 일치해야 검색이된다.
+# 검색어를 "bailey mary"로 한다던가 검색어 사이에 다른 단어가 포함되면 검색이 안된다.
+
+# 용어 쿼리
+# 사용 방법은 매치 쿼리와 비슷하지만 차이점은 매치 쿼리는 전문 쿼리이기 때문에 검색어인 "mary bailey"가 분석기에 의해서 [mary, bailey]로 토큰화되고, "mary"나 "bailey"가 있으면 검색이 되었다. 용어 검색은 검색어인 "mary bailey"가 분석기에의해 토큰화되지 않는다.
+# 매치 쿼리는 "mary"나 "bailey"가 있으면 검색되지만 용어 쿼리는 "mary bailey"라고 정확한 용어가 있는 경우에만 검색된다.
+
+# 용어 쿼리는 검색어로 지정한 "mary bailey"가 정확히 있어야 검색이 가능하다. 분석기를 거치지 않기 때문에 대소문자도 정확히 일치해야 검색이 가능하다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["customer_full_name"],
+  "query": {
+    "term": {
+      "customer_full_name": "Mary Bailey"
+    }
+  }
+}
+
+GET kibana_sample_data_ecommerce/_mapping
+# 위 쿼리를 실행했을 때 검색이 안되는 이유는 customer_full_name 필드가 type이 "text"와 "keyword"로 지정된 멀티 필드이다.
+# 용어 쿼리는 "keyword" 타입으로 매핑된 필드에서 사용해야 한다. "customer_full_name"을 사용하면 "text" 타입으로 인식되서 검색을 하지 못한다.
+# 용어 검색이 정상적으로 실행되게 하려면 "keyword" 타입으로 설정된 필드를 사용해야 하기 때문에 멀티 필드로 지정된 "customer_full_name.keyword"를 사용해야 한다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["customer_full_name"],
+  "query": {
+    "term": {
+      "customer_full_name.keyword": "Mary bailey"
+    }
+  }
+}
+
+# 용어들 쿼리
+# 용어들 쿼리는 용어 쿼리의 일종으로 여러 용어를 검색한다.
+# "keyword" 타입으로 매필된 필드에 사용해야 하며, 분석기를 거치지 않으므로 대소문자도 신경을 써야 한다.
+# 용어 쿼리는 "term"를 사용하고 용어들 쿼리는 "terms"를 사용한다.
+# 여러 용어를 검색하려면 []로 묶어서 검색어를 쓰면된다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["day_of_week", "day_of_week_i"],
+  "query": {
+    "terms": {
+      "day_of_week": ["Sunday", "Monday"]
+    }
+  }
+}
+
+# 멀티 매치 쿼리
+# 이전까지 쿼리를 이용해 검색할 때 반드시 필드명을 적어야 했다. 엘라스틱은 필드를 기준으로 찾으려는 용어나 구절을 검색하기 때문이다. 이 방법은 검색할 용어나 구절이 정확하게 어떤 필드에 있는 알고있을 경우 사용할 수 있다.
+# 검색하고자 하는 용어나 구절이 정확히 어떤 필드에 있는 지 모르는 경우 멀티 매치 쿼리를 이용해서 하나의 필드가 아닌 여러개의 필드에서 검색을 해야 한다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": [
+    "customer_first_name", 
+    "customer_full_name", 
+    "customer_last_name"
+  ], 
+  "query": {
+    "multi_match": {
+      "query": "mary",
+      "fields": [
+        "customer_first_name", 
+        "customer_full_name", 
+        "customer_last_name"
+      ]
+    }
+  }
+}
+
+# 와일드카드(*)를 이용한 멀티 필드에 멀티 매치 쿼리 요청하기
+# 와일드카드는 "multi_match"에 사용하는 "fields" 속성에 적용시키면 된다.
+# "_source" 속성에도 와일드카드를 이용해 필드 이름을 지정할 수 있다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": "customer_*_name", 
+  "query": {
+    "multi_match": {
+      "query": "mary",
+      "fields": "customer_*_name"
+    }
+  }
+}
+
+# 멀티 매치 쿼리를 실행할 때 특정 필드에 가중치 지정하기
+# 여러 개의 필드 중 특정 필드에 가중치를 두는 방법을 부스팅(boosting) 기법이라고 한다.
+# 블로그 검색시 검색어가 제목에 있는 것과 본문에 있는 것은 무게감이 다르다. 일반적으로 제목에 검색어가 포함된 경우가 더 중요할 가능성이 높은데 이럴 경우 제목에 가중치를 부여해서 멀티 매치 쿼리를 실행한다.
+# 특정 필드에 가중치를 부여하려면 "^" 기호와 숫자를 적어주면 된다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": "customer_*_name", 
+  "query": {
+    "multi_match": {
+      "query": "mary",
+      "fields": [
+        "customer_first_name", 
+        "customer_full_name^2", 
+        "customer_last_name"
+      ]
+    }
+  }
+}
+
+GET kibana_sample_data_flights/_search
+GET kibana_sample_data_flights/_mapping
+
+# 범위 쿼리
+# 특정 날짜나 숫자의 범위를 지정해 범위 안에 포함된 데이터들을 검색할 때 사용한다. 날짜, 숫자, IP 타입의 데이터는 범위 쿼리가 가능하지만 텍스트, 키워드 타입의 데이터는 범위 쿼리를 사용할 수 없다.
+# 범위 지정에 사용되는 파라미터
+# gte: 이상, gt: 초과, lte: 이하, lt: 미만
+
+GET kibana_sample_data_flights/_search
+{
+  "_source": "timestamp",
+  "query": {
+    "range": {
+      "timestamp": {
+        "gte": "2023-02-28",
+        "lt": "2023-03-01"
+      }
+    }
+  }
+}
+
+# 현재 시간(now)을 기준으로 범위를 지정한다.
+GET kibana_sample_data_flights/_search
+{
+  "_source": "timestamp",  
+  "query": {
+    "range": {
+      "timestamp": {
+        "gte": "now+10h"
+      }
+    }
+  }
+}
+
+# 범위 데이터 타입
+# integer_range, long_range, float_range, double_range
+# date_range, ip_range
+
+# 날짜/시간 범위를 가지는 인덱스
+PUT range_test_index
+{
+  "mappings": {
+    "properties": {
+      "test_date": {
+        "type": "date_range"
+      }
+    }
+  }
+}
+GET _cat/indices
+GET range_test_index/_mapping
+
+# type 속성을 "date"로 지정하면 날짜/시간 데이터를 입력하면 되지만 "date_range"로 지정하면 "gte" 또는  "gt", "lte" 또는 "lt" 파라미터를 이용해 날짜/시간 범위를 지정해서 입력해야 한다.
+
+PUT range_test_index/_doc/1
+{
+  "test_date": "2023-03-09"
+}
+# "date_range"로 type 속성을 지정한 컬럼에 그냥 날짜/시간 데이터를 입력하면 에러가 발생된다.
+
+PUT range_test_index/_doc/1
+{
+  "test_date": {
+    "gte": "2023-03-09"
+  }
+}
+GET range_test_index/_search
+
+# 논리 쿼리는 여러 쿼리를 조합할 수 있다.
+
+# must 타입은 쿼리를 실행하고 참인 도큐먼트를 찾는다.
+GET kibana_sample_data_ecommerce/_mappings
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["customer_first_name", "day_of_week"],
+  "query": {
+    "bool": {
+      "must": [
+        {"match": { "customer_first_name": "mary" }}
+      ]
+    }
+  }
+}
+
+# must 타입은 복수개의 쿼리를 실행한 결과를 얻어야 하므로 [] 내부에 복수개의 쿼리를 사용한다. => AND
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["customer_first_name", "day_of_week"], 
+  "query": {
+    "bool": {
+      "must": [
+        {"match": {"customer_first_name": "mary"}},
+        {"term": {"day_of_week": "Friday"}}
+      ]
+    }
+  }
+}
+
+# should 타입은 복수개의 쿼리를 실행한 결과를 얻어야 하므로 [] 내부에 복수개의 쿼리를 사용한다. => OR
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["customer_first_name", "day_of_week"], 
+  "query": {
+    "bool": {
+      "should": [
+        {"match": {"customer_first_name": "mary"}},
+        {"term": {"day_of_week": "Friday"}}
+      ]
+    }
+  }
+}
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["customer_first_name", "day_of_week"], 
+  "query": {
+    "bool": {
+      "must_not": [
+        {"match": {"customer_first_name": "mary"}},
+        {"term": {"day_of_week": "Friday"}}
+      ]
+    }
+  }
+}
+
+GET kibana_sample_data_ecommerce/_mapping
+# 논리 쿼리 중에서 filter 타입을 사용한 쿼리
+# filter는 must와 같은 동작을 하지만 컨텍스트로 동작하기 때문에 유사도 스코어에 영향을 미치지 않는다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["products.base_price"],
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "range": {
+            "products.base_price": {
+              "gte": 30,
+              "lte": 60
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["products.base_price"],
+  "query": {
+    "range": {
+      "products.base_price": {
+        "gte": 30,
+        "lte": 60
+      }
+    }
+  }
+}
+
+# filter 타입과 must 타입을 사용한 논리 쿼리
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["day_of_week", "customer_full_name"],
+  "query": {
+    "bool": {
+      "filter": [
+        {"term": {"day_of_week": "Sunday"}}
+      ],
+      "must": [
+        {"match": {"customer_full_name": "mary"}}
+      ]
+    }
+  }
+}
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": ["day_of_week", "customer_full_name"],
+  "query": {
+    "bool": {
+      "must": {"match": {"customer_full_name": "mary"}},
+      "filter": {"term": {"day_of_week": "Sunday"}}
+    }
+  }
+}
+# 검색을 먼저하고 필터링 하면 불필요한 데이터도 필터링을 하게되므로 시간이 오래 걸린다. 이를 방지하기 위해서 먼저 필터링을 실행하고 검색하는 방법을 사용하면 검색 성능을 향상시킬 수 있다.
+
+# 와일드카드 쿼리
+# 와일드카드 쿼리는 용어를 검색할 때 *와 ?라는 두 가지 기호를 사용할 수 있다. *는 공백까지 포함해서 글자 수에 상관 없이 모든 문자를 매칭할 수 있고, ?는 오직 한 문자만 매칭할 수 있다.
+# *을 포함한 값을 검색해야 검색이 정상적으로 실행된다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": "customer_full_name",
+  "query": {
+    "wildcard": {
+      "customer_full_name.keyword": {
+        "value": "M?ry*"
+      }
+    }
+  }
+}
+
+# 정규식 쿼리
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": "customer_first_name",
+  "query": {
+    "regexp": {
+      "customer_first_name.keyword": {
+        "value": "Mar."
+      }
+    }
+  }
+}
