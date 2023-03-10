@@ -1,0 +1,373 @@
+# 집계는 데이터를 그룹화하고 통계값을 얻는 기능으로 SQL의 GROUP BY와 같은 역할을 한다.
+# 엘라스틱서치의 집계는 메트릭 집계와 버킷 집계 2가지를 사용할 수 있고 메트릭 집계는 통계에 사용되고 버킷 집계는 그룹화에 사용된다.
+# 집계의 형식
+# GET 인덱스이름/_search
+# {
+#   "aggs": {
+#     "NAME": {
+#       "AGG_TYPE": {
+#         ...
+#       }
+#     }
+#   }
+# }
+# "aggs"는 집계를 엘라스틱서치에 요청한다.
+# "NAME"은 사용자가 지정하는 집계 이름이다.
+# "AGG_TYPE"은 집계의 형태이다.
+
+GET kibana_sample_data_ecommerce/_mapping
+
+# 메트릭 집계
+# 메트릭 집계는 필드의 최소(min), 최대(max), 합계(sum), 평균(avg)과 같은 통계 결과를 집계한다.
+
+# 평균 집계
+# 집계를 실행할 때는 집계에 사용된 데이터를 출력할 필요가 없으므로 "size": 0으로 설정해서 집계에 사용한 데이터는 출력하지 않을 수 있다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0, 
+  "aggs": {
+    "stats_aggs": {
+      "avg": {
+        "field": "products.base_price"
+      }
+    }
+  }
+}
+
+# 백분위 집계 => 1사분위수, 중위수, 3사분위수
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "stats_aggs": {
+      "percentiles": {
+        "field": "products.base_price",
+        "percents": [
+          1,
+          5,
+          25,
+          50,
+          75,
+          95,
+          99
+        ]
+      }
+    }
+  }
+}
+
+# 유니크한 값 개수 확인하기
+# 중복되는 데이터는 모두 제거하고 중복되지 않는 데이터의 개수만 센다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "cadri_aggs": {
+      "cardinality": {
+        "field": "day_of_week",
+        "precision_threshold": 100
+      }
+    }
+  }
+}
+# "precision_threshold"는 정확도를 의미하고 사용하면 정확도는 크게 올라가지만 정확도를 판단하는 시스템이 자원을 많이 사용하게 된다.
+# "precision_threshold"에 지정하는 값은 실제 결과로 예상되는 값보다 큰 값으로 지정해야 한다.
+
+# 유니크한 필드값을 알아보자.
+# 버킷 집계의 일종인 용어(terms) 집계를 사용하면 유니크한 필드의 값과 개수를 확인할 수 있다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "cadri_aggs": {
+      "terms": {
+        "field": "day_of_week",
+        "size": 10
+      }
+    }
+  }
+}
+# "terms" 내부의 "size"는 유니크 집계된 결과를 출력할 개수를 지정한다. "size"에 지정한 유니크한 값의 개수보다 집계된 유니크한 값으 개수가 더 많을 경우에는 "sum_other_doc_count" 값이 0보다 크게나오므로 0보다 크게 나왔으면 "size"를 증가시켜주면 된다.
+
+# 쿼리를 사용한 검색 결과 내에서의 집계
+# 전체 데이터 중에서 "day_of_week"가 "Friday"에 해당되는 데이터만 검색하고 검색 결과에서 합계 집계를 실행한다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "_source": ["day_of_week"], 
+  "query": {
+    "term": {
+      "day_of_week": {
+        "value": "Friday"
+      }
+    }
+  },
+  "aggs": {
+    "query_aggs": {
+      "sum": {
+        "field": "products.base_price"
+      }
+    }
+  }
+}
+
+# 버킷 집계 => 그룹화
+# 메트릭 집계는 특정 필드를 기준으로 합계, 평균 같은 통계값을 계산하는게 목적이라면, 버킷 집계 특정 기준을 설정해서 데이터를 그룹화하는 역할을 한다.
+
+# 히스토그램 집계
+# 히스토그램 집계는 숫자 타입 필드를 일정한 간격으로 분류한다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "histogram_aggs": {
+      "histogram": {
+        "field": "products.base_price",
+        "interval": 100
+      }
+    }
+  }
+}
+# "interval" 파라미터로 히스토그램의 간격을 설정한다.
+
+# 범위 집계
+# 히스토그램 집계는 "interval" 파라미터로 모든 버킷의 크기를 동일하게 지정했다. 히스토그램 집계를 실행한 결과를 보면 0.0 이상 100.0 미만인 구간에 대부분의 데이터가 몰려있는 현상이 발생되었다.
+# 범위 집계를 사용하면 각 버킷의 범위를 사용자가 직접 설정할 수 있어서 데이터가 몰려있는 구간은 더 세분화해서 집계를 할 수 있다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "range_aggs": {
+      "range": {
+        "field": "products.base_price",
+        "ranges": [
+          { "from": 0, "to": 25 },
+          { "from": 25, "to": 50 },
+          { "from": 50, "to": 75 },
+          { "from": 75, "to": 100 },
+          { "from": 100, "to": 200 },
+          { "from": 200, "to": 1000 }
+        ]
+      }
+    }
+  }
+}
+
+# 용어 집계
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "term_aggs": {
+      "terms": {
+        "field": "day_of_week",
+        "size": 6
+      }
+    }
+  }
+}
+# "size"는 용어 집계된 필드의 값을 기준으로 출력할 상위 버킷 개수를 지정한다.
+# "doc_count_error_upper_bound"는 부정확도를 의미하고 버킷이 잠재적으로 카운트하지 못할 데이터의 개수이다.
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "term_aggs": {
+      "terms": {
+        "field": "day_of_week",
+        "size": 6,
+        "show_term_doc_count_error": true
+      }
+    }
+  }
+}
+# 용어 집계시 "show_term_doc_count_error": true 파라미터를 지정하면 각 버켓별로 잠재적인 오류가 발생할 수 있는 데이터의 개수를 확인할 수 있다.
+
+# 용어 집계시 "doc_count_error_upper_bound" 값이 출력되면 "shard_size" 파라미터로 샤드 크기를 늘릴 수 있다.
+# 샤드 크기는 용어 집계 과정에서 개별 샤드에서 집계를 위해 처리하는 개수를 의미하며 샤드의 크기를 크게 하면 정확도는 올라가지만 컴퓨터 자원 사용량이 증가하게 되서 성능이 떨어질 수 있다.
+# 샤드 크기는 기본적으로 버킷의 개수 * 1.5 + 10으로 계산된다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "term_aggs": {
+      "terms": {
+        "field": "day_of_week",
+        "size": 7,
+        "show_term_doc_count_error": true,
+        "shard_size": 100
+      }
+    }
+  }
+}
+
+# 집계의 조합
+# 관계형 데이터베이스에서 GROUP BY를 이용해서 그룹화 하고 SUM(), AVG() 같은 그룹 함수를 사용해서 그룹별 통계를 계산할 수 있었던 것 처럼 집계를 조합해보자.
+
+# 버켓 집계와 메트릭 집계의 조합
+# 버킷 집계로 그룹화를 먼저 하고 메트릭 집계로 통계값을 계산한다.
+# 용어 집계 후 통계를 1개만 집계
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "term_aggs": {
+      "terms": {
+        "field": "day_of_week",
+        "size": 10
+      },
+      "aggs": {
+        "sum_aggs": {
+          "sum": {
+            "field": "products.base_price"
+          }
+        }
+      }
+    }
+  }
+}
+
+# 용어 집계 후 통계를 2개 이상 집계
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "term_aggs": {
+      "terms": {
+        "field": "day_of_week",
+        "size": 10
+      },
+      "aggs": {
+        "sum_aggs": {
+          "sum": {
+            "field": "products.base_price"
+          }
+        },
+        "avg_aggs": {
+          "avg": {
+            "field": "products.base_price"
+          }
+        }
+      }
+    }
+  }
+}
+
+# 서브 버킷 집계
+# 버킷 집계 내부에 다시 버킷 집계(서브 버킷)를 요청하는 집계이다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "histogram_aggs": {
+      "histogram": {
+        "field": "products.base_price",
+        "interval": 100
+      },
+      "aggs": {
+        "term_aggs": {
+          "terms": {
+            "field": "day_of_week",
+            "size": 2
+          }
+        }
+      }
+    }
+  }
+}
+
+# 서브 버킷(term_aggs) 집계 내부에 메트릭 집계(avg_aggs)를 요청하는 집계
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "histogram_aggs": {
+      "histogram": {
+        "field": "products.base_price",
+        "interval": 100
+      },
+      "aggs": {
+        "term_aggs": {
+          "terms": {
+            "field": "day_of_week",
+            "size": 2
+          },
+          "aggs": {
+            "avg_aggs": {
+              "avg": {
+                "field": "products.base_price"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+# 파이프라인(pipeline) 집계
+# 파이프라인 집계는 이전 집계 결과를 받아서 다음 단계에서 사용하는 파이프라인 개념을 사용한 집계이다.
+# 부모 집계와 형제 집계라는 두 가지 유형이 있다.
+
+# 부모 집계
+# 기존 집계 결과를 이용해 새로운 집계를 생성하는 방식으로 결과는 기존 집계 내부에 나온다.
+# 부모 집계는 단독으로는 사용할 수 없고 다른 집계(sum_aggs)가 있어야 그 집계 결과를 부모 집계(cum_sum)가 사용한다.
+
+# 누적합을 구하는 부모 집계
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "histogram_aggs": {
+      "histogram": {
+        "field": "products.base_price",
+        "interval": 100
+      },
+      "aggs": {
+        "sum_aggs": {
+          "sum": {
+            "field": "taxful_total_price"
+          }
+        },
+        "cum_sum": {
+          "cumulative_sum": {
+            "buckets_path": "sum_aggs"
+          }
+        }
+      }
+    }
+  }
+}
+# 파이프라인 집계는 "buckets_path" 파라미터로 반드시 버켓 경로를 입력해야 한다.
+
+# 형제 집계
+# 기존 집계를 참고해서 집계를 수행한다. 결과는 기존 집계와 동일선산에 나온다.
+# 부모 집계는 기존 집계 내부에서 집계 작업을 했었다. 형제 집계는 기존 집계 내부가 아닌 외부에서 기존 집계를 이용해 집계 작업을 한다.
+
+# 총합을 계산하는 형제 집계 요청
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "aggs": {
+    "term_aggs": {
+      "terms": {
+        "field": "day_of_week",
+        "size": 2
+      },
+      "aggs": {
+        "sum_aggs": {
+          "sum": {
+            "field": "products.base_price"
+          }
+        }
+      }
+    },
+    "sum_total_price": {
+      "stats_bucket": {
+        "buckets_path": "term_aggs > sum_aggs"
+      }
+    }
+  }
+}
+# sum_total_price가 참고할 집계는 sum_aggs이고 sum_aggs는 term_aggs 집계의 하위 집계이므로 하위 집계 경로를 나타낼 때 사용하는 ">"를 사용해서 "term_aggs > sum_aggs"와 같이 경로를 지정한다.
