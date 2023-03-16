@@ -1,0 +1,275 @@
+logstash-test.conf
+
+==========================================================================
+
+input {
+  file {
+    path => "D:/elasticSearch/logstash-7.17.9/config/filter-example.log"
+    start_position => "beginning"
+    sincedb_path => "nul"
+  }
+}
+
+filter {
+  mutate {
+    split => { "message" => " " }
+    add_field => { "id" => "%{[message][2]}" }
+    remove_field => "message"
+  }
+}
+
+output {
+  stdout { }
+}
+
+==========================================================================
+
+input {
+  file {
+    path => "D:/elasticSearch/logstash-7.17.9/config/filter-example.log"
+    start_position => "beginning"
+    sincedb_path => "nul"
+  }
+}
+
+filter {
+  dissect {
+    mapping => {"message" => "[%{timestamp}]%{?->}[%{id}] %{ip} %{+ip} [%{level}] - %{msg}"}
+  }
+}
+
+output {
+  stdout { }
+}
+
+==========================================================================
+
+input {
+  file {
+    path => "D:/elasticSearch/logstash-7.17.9/config/filter-example.log"
+    start_position => "beginning"
+    sincedb_path => "nul"
+  }
+}
+
+filter {
+  grok {
+    pattern_definitions => {"MY_TIMESTAMP" => "%{YEAR}[/.-]%{MONTHNUM}[/.-]%{MONTHDAY}[T ]%{HOUR}:?%{MINUTE}(?::?%{SECOND})?%{ISO8601_TIMEZONE}?"}
+    match => {"message" => "\[%{MY_TIMESTAMP:timestamp}\] [ ]*\[%{DATA:id}\] %{IP:ip} %{NUMBER:port:int} \[%{LOGLEVEL:level}\] \- %{GREEDYDATA:msg}"}
+  }
+}
+
+output {
+  stdout { }
+}
+
+==========================================================================
+
+input {
+  file {
+    path => "D:/elasticSearch/logstash-7.17.9/config/filter-example.log"
+    start_position => "beginning"
+    sincedb_path => "nul"
+  }
+}
+
+filter {
+  dissect {
+    mapping => {"message" => "[%{?timestamp}]%{?->}[%{id}] %{?ip} %{?+ip} [%{level}] - %{?msg}"}
+  }
+  mutate {
+    uppercase => ["id", "level"]
+  }
+}
+
+output {
+  stdout { }
+}
+
+==========================================================================
+
+input {
+  file {
+    path => "D:/elasticSearch/logstash-7.17.9/config/filter-example.log"
+    start_position => "beginning"
+    sincedb_path => "nul"
+  }
+}
+
+filter {
+  dissect {
+    mapping => {"message" => "[%{timestamp}]%{?->}[%{?id}] %{?ip} %{?+ip} [%{?level}] - %{?msg}"}
+  }
+  mutate {
+    strip => "timestamp"
+  }
+  date {
+    match => ["timestamp", "YYYY-MM-dd HH:mm", "YYYY/MM/dd HH:mm:ss", "YYYY.MM.dd HH:mm:ss"]
+    target => "new_timestamp"
+    timezone => "UTC"
+  }
+}
+
+output {
+  stdout { }
+}
+
+==========================================================================
+
+input {
+  file {
+    path => "D:/elasticSearch/logstash-7.17.9/config/filter-example.log"
+    start_position => "beginning"
+    sincedb_path => "nul"
+  }
+}
+
+filter {
+  dissect {
+    mapping => {"message" => "[%{timestamp}]%{?->}[%{id}] %{ip} %{+ip} [%{level}] - %{msg}"}
+  }
+  if [level] == "INFO" {
+    drop {}
+  }
+  else if [level] == "warn" {
+    mutate {
+      remove_field => ["ip", "level", "msg"]
+    }
+  }
+  else {
+    mutate {
+      add_field => {"조건에" => "만족하지 않을때"}
+    }
+  }
+}
+
+output {
+  stdout { }
+}
+
+==========================================================================
+
+input {
+  file {
+    path => "D:/elasticSearch/logstash-7.17.9/config/filter-example.log"
+    start_position => "beginning"
+    sincedb_path => "nul"
+  }
+}
+
+filter {
+
+}
+
+output {
+  file {
+    path => "D:/elasticSearch/logstash-7.17.9/config/output.json"
+  }
+  elasticsearch {
+    index => "output"
+  }
+}
+
+==========================================================================
+
+input {
+  file {
+    path => "D:/elasticSearch/logstash-7.17.9/config/filter-example.log"
+    start_position => "beginning"
+    sincedb_path => "nul"
+    # "#"으로 시작하면 그 줄은 주석으로 인식한다.
+    # codec => "json" # 읽으려는 file이 json 형식의 파일일 경우 사용한다.
+    # codec => "plain" # 기본값
+  }
+}
+
+filter {
+
+}
+
+output {
+  stdout {
+    # codec => "line" # line 형식으로 텍스트를 출력한다.
+    # codec => "json" # json 형태로 로그가 만들어진다.
+    # codec => "rubydebug" # json 형태로 결과가 나타나며, 들어쓰기도 지원된다. 기본값
+  }
+}
+
+==========================================================================
+
+pipelines.yml
+
+==========================================================================
+
+- pipeline.id: mypipe1
+  path.config: "/elasticSearch/logstash-7.17.9/config/mypipe1.conf"
+- pipeline.id: mypipe2
+  path.config: "/elasticSearch/logstash-7.17.9/config/mypipe2.conf"
+
+==========================================================================
+
+mypipe1.conf
+
+==========================================================================
+
+input {
+  file {
+    path => "D:/elasticSearch/elasticsearch-7.17.9/logs/elasticsearch.log"
+    start_position => "beginning"
+    sincedb_path => "nul"
+  }
+}
+
+output {
+  stdout { }
+}
+
+==========================================================================
+
+mypipe2.conf
+
+==========================================================================
+
+input {
+  file {
+    path => "D:/elasticSearch/logstash-7.17.9/config/filter-example.log"
+    start_position => "beginning"
+    sincedb_path => "nul"
+  }
+}
+
+output {
+  elasticsearch {
+    index => "multipipe_pipe2"
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
