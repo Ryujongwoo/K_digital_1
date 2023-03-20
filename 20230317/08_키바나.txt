@@ -1,0 +1,263 @@
+GET _cat/indices
+
+PUT kibana_index1/_doc/1
+{
+  "name": "kim"
+}
+GET kibana_index1
+GET kibana_index1/_mapping
+GET kibana_index1/_search
+
+PUT kibana_index2/_doc/1
+{
+  "name": "lee"
+}
+GET kibana_index2
+GET kibana_index2/_mapping
+GET kibana_index2/_search
+
+GET kibana_sample_data_flights/_search
+{
+  "size": 0,
+  "aggs": {
+    "unique_aggs": {
+      "terms": {
+        "field": "dayOfWeek",
+        "size": 10
+      }
+    }
+  }
+}
+
+POST _sql?format=txt
+{
+  "query": "DESCRIBE kibana_sample_data_flights"
+}
+
+POST _sql?format=txt
+{
+  "query": """
+  SELECT Dest FROM kibana_sample_data_flights 
+  WHERE OriginCountry = 'US' 
+  ORDER BY DistanceMiles DESC 
+  LIMIT 10
+  """
+}
+
+GET kibana_sample_data_flights/_mapping
+GET kibana_sample_data_flights/_search
+{
+  "size": 10,
+  "query": {
+    "term": {
+      "OriginCountry": {
+        "value": "US"
+      }
+    }
+  },
+  "_source": false,
+  "stored_fields": "_none",
+  "docvalue_fields": [
+    {
+      "field": "Dest"
+    }
+  ],
+  "sort": [
+    {
+      "DistanceMiles": {
+        "order": "desc",
+        "missing": "_first",
+        "unmapped_type": "float"
+      }
+    }
+  ]
+}
+
+
+
+GET _cat/indices
+
+PUT kibana_index1/_doc/1
+{
+  "name": "kim"
+}
+GET kibana_index1
+GET kibana_index1/_mapping
+GET kibana_index1/_search
+
+PUT kibana_index2/_doc/1
+{
+  "name": "lee"
+}
+GET kibana_index2
+GET kibana_index2/_mapping
+GET kibana_index2/_search
+
+GET kibana_sample_data_flights/_search
+{
+  "size": 0,
+  "aggs": {
+    "unique_aggs": {
+      "terms": {
+        "field": "dayOfWeek",
+        "size": 10
+      }
+    }
+  }
+}
+
+POST _sql?format=txt
+{
+  "query": "DESCRIBE kibana_sample_data_flights"
+}
+
+POST _sql?format=txt
+{
+  "query": """
+  SELECT Dest FROM kibana_sample_data_flights 
+  WHERE OriginCountry = 'US' 
+  ORDER BY DistanceMiles DESC 
+  LIMIT 10
+  """
+}
+
+GET kibana_sample_data_flights/_mapping
+GET kibana_sample_data_flights/_search
+{
+  "size": 10,
+  "query": {
+    "term": {
+      "OriginCountry": {
+        "value": "US"
+      }
+    }
+  },
+  "_source": false,
+  "stored_fields": "_none",
+  "docvalue_fields": [
+    {
+      "field": "Dest"
+    }
+  ],
+  "sort": [
+    {
+      "DistanceMiles": {
+        "order": "desc",
+        "missing": "_first",
+        "unmapped_type": "float"
+      }
+    }
+  ]
+}
+
+GET _cat/indices
+
+PUT kibana_index1/_doc/1
+{
+  "name": "kim"
+}
+GET kibana_index1
+GET kibana_index1/_mapping
+GET kibana_index1/_search
+
+PUT kibana_index2/_doc/1
+{
+  "name": "lee"
+}
+GET kibana_index2
+GET kibana_index2/_mapping
+GET kibana_index2/_search
+
+GET kibana_sample_data_flights/_search
+{
+  "size": 0,
+  "aggs": {
+    "unique_aggs": {
+      "terms": {
+        "field": "dayOfWeek",
+        "size": 10
+      }
+    }
+  }
+}
+
+POST _sql?format=txt
+{
+  "query": "DESCRIBE kibana_sample_data_flights"
+}
+
+POST _sql?format=txt
+{
+  "query": """
+  SELECT Dest FROM kibana_sample_data_flights 
+  WHERE OriginCountry = 'US' 
+  ORDER BY DistanceMiles DESC 
+  LIMIT 10
+  """
+}
+
+GET kibana_sample_data_flights/_mapping
+GET kibana_sample_data_flights/_search
+{
+  "size": 10,
+  "query": {
+    "term": {
+      "OriginCountry": {
+        "value": "US"
+      }
+    }
+  },
+  "_source": false,
+  "stored_fields": "_none",
+  "docvalue_fields": [
+    {
+      "field": "Dest"
+    }
+  ],
+  "sort": [
+    {
+      "DistanceMiles": {
+        "order": "desc",
+        "missing": "_first",
+        "unmapped_type": "float"
+      }
+    }
+  ]
+}
+
+DELETE tl_kodis_bas_11
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
